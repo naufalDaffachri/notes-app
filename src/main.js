@@ -1,60 +1,137 @@
-import './style.css'
-import heroImg from './assets/hero.png'
-import javascriptLogo from './assets/javascript.svg'
-import viteLogo from './assets/vite.svg'
-import { setupCounter } from './counter.js'
+import "./style.css";
+import { createStore } from "./storage.js";
 
-document.querySelector('#app').innerHTML = `
-<section id="center">
-  <div class="hero">
-    <img src="${heroImg}" class="base" width="170" height="179">
-    <img src="${javascriptLogo}" class="framework" alt="JavaScript logo"/>
-    <img src="${viteLogo}" class="vite" alt="Vite logo" />
-  </div>
-  <div>
-    <h1>Get started</h1>
-    <p>Edit <code>src/main.js</code> and save to test <code>HMR</code></p>
-  </div>
-  <button id="counter" type="button" class="counter"></button>
-</section>
+const store = createStore();
+const app = document.querySelector("#app");
+let editingId = null;
 
-<div class="ticks"></div>
+app.innerHTML = `
+  <main class="page-shell">
+    <header class="page-header">
+      <div>
+        <p class="eyebrow">RUANG PRIBADI</p>
+        <h1>Catatan</h1>
+      </div>
+      <button class="button button-primary" id="add-note" type="button">
+        <span aria-hidden="true">+</span> Tambah catatan
+      </button>
+    </header>
 
-<section id="next-steps">
-  <div id="docs">
-    <svg class="icon" role="presentation" aria-hidden="true"><use href="/icons.svg#documentation-icon"></use></svg>
-    <h2>Documentation</h2>
-    <p>Your questions, answered</p>
-    <ul>
-      <li>
-        <a href="https://vite.dev/" target="_blank">
-          <img class="logo" src="${viteLogo}" alt="" />
-          Explore Vite
-        </a>
-      </li>
-      <li>
-        <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript" target="_blank">
-          <img class="button-icon" src="${javascriptLogo}" alt="">
-          Learn more
-        </a>
-      </li>
-    </ul>
-  </div>
-  <div id="social">
-    <svg class="icon" role="presentation" aria-hidden="true"><use href="/icons.svg#social-icon"></use></svg>
-    <h2>Connect with us</h2>
-    <p>Join the Vite community</p>
-    <ul>
-      <li><a href="https://github.com/vitejs/vite" target="_blank"><svg class="button-icon" role="presentation" aria-hidden="true"><use href="/icons.svg#github-icon"></use></svg>GitHub</a></li>
-      <li><a href="https://chat.vite.dev/" target="_blank"><svg class="button-icon" role="presentation" aria-hidden="true"><use href="/icons.svg#discord-icon"></use></svg>Discord</a></li>
-      <li><a href="https://x.com/vite_js" target="_blank"><svg class="button-icon" role="presentation" aria-hidden="true"><use href="/icons.svg#x-icon"></use></svg>X.com</a></li>
-      <li><a href="https://bsky.app/profile/vite.dev" target="_blank"><svg class="button-icon" role="presentation" aria-hidden="true"><use href="/icons.svg#bluesky-icon"></use></svg>Bluesky</a></li>
-    </ul>
-  </div>
-</section>
+    <section class="notes-section" aria-labelledby="notes-heading">
+      <div class="section-heading">
+        <h2 id="notes-heading">Semua catatan</h2>
+        <label class="search-field">
+          <span class="visually-hidden">Cari</span>
+          <input id="search" type="search" aria-label="Cari" placeholder="Cari catatan" />
+        </label>
+      </div>
+      <div id="notes-list" class="notes-list" aria-live="polite"></div>
+      <p id="empty-state" class="empty-state" hidden>Belum ada catatan. Mulai dengan menulis sesuatu.</p>
+    </section>
 
-<div class="ticks"></div>
-<section id="spacer"></section>
-`
+    <section id="editor" class="editor" aria-labelledby="editor-heading" hidden>
+      <div class="editor-heading">
+        <div>
+          <p class="eyebrow">CATATAN BARU</p>
+          <h2 id="editor-heading">Tulis catatan</h2>
+        </div>
+        <button class="icon-button" id="close-editor" type="button" aria-label="Tutup editor">×</button>
+      </div>
+      <form id="note-form">
+        <div class="field-group">
+          <label for="title">Judul</label>
+          <input id="title" name="title" type="text" autocomplete="off" />
+        </div>
+        <div class="field-group">
+          <label for="body">Isi</label>
+          <textarea id="body" name="body" rows="7"></textarea>
+        </div>
+        <div class="editor-actions">
+          <button class="button button-primary" type="submit">Simpan</button>
+          <button class="button button-danger" id="delete-note" type="button" hidden>Hapus</button>
+        </div>
+      </form>
+    </section>
+  </main>
+`;
 
-setupCounter(document.querySelector('#counter'))
+const notesList = app.querySelector("#notes-list");
+const emptyState = app.querySelector("#empty-state");
+const editor = app.querySelector("#editor");
+const form = app.querySelector("#note-form");
+const titleInput = app.querySelector("#title");
+const bodyInput = app.querySelector("#body");
+const deleteButton = app.querySelector("#delete-note");
+
+function renderNotes() {
+  const notes = store.list();
+  notesList.replaceChildren();
+  emptyState.hidden = notes.length > 0;
+
+  for (const note of notes) {
+    const item = document.createElement("article");
+    item.className = "note-item";
+
+    const openButton = document.createElement("button");
+    openButton.className = "note-open";
+    openButton.type = "button";
+    openButton.dataset.noteId = note.id;
+
+    const noteTitle = document.createElement("span");
+    noteTitle.className = "note-title";
+    noteTitle.textContent = note.title || "Tanpa judul";
+
+    const noteBody = document.createElement("span");
+    noteBody.className = "note-body";
+    noteBody.textContent = note.body;
+
+    openButton.append(noteTitle, noteBody);
+    item.append(openButton);
+    notesList.append(item);
+  }
+}
+
+function openEditor(note = null) {
+  editingId = note?.id ?? null;
+  titleInput.value = note?.title ?? "";
+  bodyInput.value = note?.body ?? "";
+  deleteButton.hidden = !note;
+  editor.querySelector("#editor-heading").textContent = note ? "Edit catatan" : "Tulis catatan";
+  editor.querySelector(".eyebrow").textContent = note ? "PERBARUI CATATAN" : "CATATAN BARU";
+  editor.hidden = false;
+  titleInput.focus();
+}
+
+function closeEditor() {
+  editor.hidden = true;
+  form.reset();
+  editingId = null;
+}
+
+app.querySelector("#add-note").addEventListener("click", () => openEditor());
+app.querySelector("#close-editor").addEventListener("click", closeEditor);
+
+form.addEventListener("submit", (event) => {
+  event.preventDefault();
+  store.save({ id: editingId, title: titleInput.value, body: bodyInput.value });
+  closeEditor();
+  renderNotes();
+});
+
+notesList.addEventListener("click", (event) => {
+  const button = event.target.closest("[data-note-id]");
+  if (!button) return;
+
+  const note = store.list().find((item) => item.id === button.dataset.noteId);
+  if (note) openEditor(note);
+});
+
+deleteButton.addEventListener("click", () => {
+  if (!editingId) return;
+
+  store.remove(editingId);
+  closeEditor();
+  renderNotes();
+});
+
+renderNotes();

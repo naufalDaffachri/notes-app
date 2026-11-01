@@ -57,6 +57,7 @@ app.innerHTML = `
 
 const notesList = app.querySelector("#notes-list");
 const emptyState = app.querySelector("#empty-state");
+const searchInput = app.querySelector("#search");
 const editor = app.querySelector("#editor");
 const form = app.querySelector("#note-form");
 const titleInput = app.querySelector("#title");
@@ -64,9 +65,13 @@ const bodyInput = app.querySelector("#body");
 const deleteButton = app.querySelector("#delete-note");
 
 function renderNotes() {
-  const notes = store.list();
+  const query = searchInput.value.trim();
+  const notes = store.search(query);
   notesList.replaceChildren();
   emptyState.hidden = notes.length > 0;
+  emptyState.textContent = query
+    ? "Tidak ada catatan yang cocok."
+    : "Belum ada catatan. Mulai dengan menulis sesuatu.";
 
   for (const note of notes) {
     const item = document.createElement("article");
@@ -110,6 +115,7 @@ function closeEditor() {
 
 app.querySelector("#add-note").addEventListener("click", () => openEditor());
 app.querySelector("#close-editor").addEventListener("click", closeEditor);
+searchInput.addEventListener("input", renderNotes);
 
 form.addEventListener("submit", (event) => {
   event.preventDefault();

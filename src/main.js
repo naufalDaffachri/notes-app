@@ -5,6 +5,12 @@ const store = createStore();
 const app = document.querySelector("#app");
 let editingId = null;
 
+if ("serviceWorker" in navigator) {
+  navigator.serviceWorker.register("/sw.js").catch((error) => {
+    console.error("Service worker registration failed:", error);
+  });
+}
+
 app.innerHTML = `
   <main class="page-shell">
     <header class="page-header">

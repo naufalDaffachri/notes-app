@@ -17,3 +17,11 @@ test("tombol Simpan terlihat di layar 360 px", async ({ page }) => {
  await page.goto("/"); await page.getByRole("button", { name: "Tambah catatan" }).click();
  await expect(page.getByRole("button", { name: "Simpan" })).toBeInViewport();
 });
+// WO-4: offline
+test("tetap bisa dibuka saat offline", async ({ page, context }) => {
+ await page.goto("/");
+ await page.waitForFunction(() => navigator.serviceWorker.controller !== null);
+ await context.setOffline(true);
+ await page.reload();
+ await expect(page.getByRole("heading", { name: "Catatan", exact: true })).toBeVisible();
+});

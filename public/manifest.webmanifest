@@ -1,0 +1,18 @@
+{
+  "name": "Catatan",
+  "short_name": "Catatan",
+  "description": "Catatan pribadi yang bisa digunakan secara offline.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#f6f7f2",
+  "theme_color": "#f6f7f2",
+  "icons": [
+    {
+      "src": "/icons/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
